@@ -1079,6 +1079,56 @@ func TestParseMethodSignature(t *testing.T) {
 	}
 }
 
+func TestVerifyMethodSignature(t *testing.T) {
+	tests := []struct {
+		method string
+		pass   bool
+	}{
+		{
+			method: "abc(uint64)void",
+			pass:   true,
+		},
+		{
+			method: "all_special_args(txn,pay,keyreg,acfg,axfer,afrz,appl,account,application,asset)void",
+			pass:   true,
+		},
+		{
+			method: "abc(uint64)",
+			pass:   false,
+		},
+		{
+			method: "abc(uint65)void",
+			pass:   false,
+		},
+		{
+			method: "(uint64)void",
+			pass:   false,
+		},
+		{
+			method: "abc(uint65,void",
+			pass:   false,
+		},
+		{
+			method: "abc(uint64))void",
+			pass:   false,
+		},
+		{
+			method: "abc",
+			pass:   false,
+		},
+	}
+
+	for _, test := range tests {
+		err := VerifyMethodSignature(test.method)
+
+		if test.pass {
+			require.NoErrorf(t, err, `Unexpected error from method "%s"`, test.method)
+		} else {
+			require.Error(t, err, `Expected an error from method "%s"`, test.method)
+		}
+	}
+}
+
 func TestInferToSlice(t *testing.T) {
 	var emptySlice []int
 	tests := []struct {

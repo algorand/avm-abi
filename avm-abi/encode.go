@@ -460,6 +460,10 @@ func decodeTuple(encoded []byte, childT []Type) ([]interface{}, error) {
 
 // ParseMethodSignature parses a method of format `method(argType1,argType2,...)retType`
 // into `method` {`argType1`,`argType2`,...} and `retType`
+//
+// NOTE: This function **DOES NOT** verify that the argument or return type strings represent valid
+// ABI types. Consider using `VerifyMethodSignature` prior to calling this function if you wish to
+// verify those types.
 func ParseMethodSignature(methodSig string) (name string, argTypes []string, returnType string, err error) {
 	argsStart := strings.Index(methodSig, "(")
 	if argsStart == -1 {
