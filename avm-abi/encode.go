@@ -1,4 +1,4 @@
-package avm_abi
+package abi
 
 import (
 	"encoding/binary"
