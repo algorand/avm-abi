@@ -1,4 +1,4 @@
-package abi
+package avm_abi
 
 import (
 	"crypto/rand"
