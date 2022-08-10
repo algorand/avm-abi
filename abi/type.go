@@ -108,6 +108,9 @@ var ufixedRegexp = regexp.MustCompile(`^ufixed([1-9][\d]*)x([1-9][\d]*)$`)
 
 // TypeOf parses an ABI type string.
 // For example: `TypeOf("(uint64,byte[])")`
+//
+// Note: this function only supports "basic" ABI types. Reference types and transaction types are
+// not supported and will produce an error.
 func TypeOf(str string) (Type, error) {
 	switch {
 	case strings.HasSuffix(str, "[]"):
@@ -447,11 +450,40 @@ func (t Type) ByteLen() (int, error) {
 // AnyTransactionType is the ABI argument type string for a nonspecific transaction argument
 const AnyTransactionType = "txn"
 
+// PaymentTransactionType is the ABI argument type string for a payment transaction argument
+const PaymentTransactionType = "pay"
+
+// KeyRegistrationTransactionType is the ABI argument type string for a key registration transaction
+// argument
+const KeyRegistrationTransactionType = "keyreg"
+
+// AssetConfigTransactionType is the ABI argument type string for an asset configuration transaction
+// argument
+const AssetConfigTransactionType = "acfg"
+
+// AssetTransferTransactionType is the ABI argument type string for an asset transfer transaction
+// argument
+const AssetTransferTransactionType = "axfer"
+
+// AssetFreezeTransactionType is the ABI argument type string for an asset freeze transaction
+// argument
+const AssetFreezeTransactionType = "afrz"
+
+// ApplicationCallTransactionType is the ABI argument type string for an application call
+// transaction argument
+const ApplicationCallTransactionType = "appl"
+
 // IsTransactionType checks if a type string represents a transaction type
 // argument, such as "txn", "pay", "keyreg", etc.
 func IsTransactionType(s string) bool {
 	switch s {
-	case AnyTransactionType, "pay", "keyreg", "acfg", "axfer", "afrz", "appl":
+	case AnyTransactionType,
+		PaymentTransactionType,
+		KeyRegistrationTransactionType,
+		AssetConfigTransactionType,
+		AssetTransferTransactionType,
+		AssetFreezeTransactionType,
+		ApplicationCallTransactionType:
 		return true
 	default:
 		return false

@@ -9,9 +9,6 @@ import (
 	"math/big"
 )
 
-// NOTE: discussion about go-algorand-sdk
-// https://github.com/algorand/go-algorand/pull/3375#issuecomment-1007536841
-
 var base32Encoder = base32.StdEncoding.WithPadding(base32.NoPadding)
 
 func addressCheckSum(addressBytes [addressByteSize]byte) []byte {

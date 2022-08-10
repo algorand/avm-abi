@@ -3,7 +3,6 @@ package abi
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -1030,122 +1029,6 @@ func TestRandomABIEncodeDecodeRoundTrip(t *testing.T) {
 	categorySelfRoundTripTest(t, testValuePool[Tuple])
 }
 
-func TestParseArgJSONtoByteSlice(t *testing.T) {
-	makeRepeatSlice := func(size int, value string) []string {
-		slice := make([]string, size)
-		for i := range slice {
-			slice[i] = value
-		}
-		return slice
-	}
-
-	tests := []struct {
-		argTypes        []string
-		jsonArgs        []string
-		expectedAppArgs [][]byte
-	}{
-		{
-			argTypes:        []string{},
-			jsonArgs:        []string{},
-			expectedAppArgs: [][]byte{},
-		},
-		{
-			argTypes:        []string{"uint8"},
-			jsonArgs:        []string{"100"},
-			expectedAppArgs: [][]byte{{100}},
-		},
-		{
-			argTypes:        []string{"uint8", "uint16"},
-			jsonArgs:        []string{"100", "65535"},
-			expectedAppArgs: [][]byte{{100}, {255, 255}},
-		},
-		{
-			argTypes: makeRepeatSlice(15, "string"),
-			jsonArgs: []string{
-				`"a"`,
-				`"b"`,
-				`"c"`,
-				`"d"`,
-				`"e"`,
-				`"f"`,
-				`"g"`,
-				`"h"`,
-				`"i"`,
-				`"j"`,
-				`"k"`,
-				`"l"`,
-				`"m"`,
-				`"n"`,
-				`"o"`,
-			},
-			expectedAppArgs: [][]byte{
-				{00, 01, 97},
-				{00, 01, 98},
-				{00, 01, 99},
-				{00, 01, 100},
-				{00, 01, 101},
-				{00, 01, 102},
-				{00, 01, 103},
-				{00, 01, 104},
-				{00, 01, 105},
-				{00, 01, 106},
-				{00, 01, 107},
-				{00, 01, 108},
-				{00, 01, 109},
-				{00, 01, 110},
-				{00, 01, 111},
-			},
-		},
-		{
-			argTypes: makeRepeatSlice(16, "string"),
-			jsonArgs: []string{
-				`"a"`,
-				`"b"`,
-				`"c"`,
-				`"d"`,
-				`"e"`,
-				`"f"`,
-				`"g"`,
-				`"h"`,
-				`"i"`,
-				`"j"`,
-				`"k"`,
-				`"l"`,
-				`"m"`,
-				`"n"`,
-				`"o"`,
-				`"p"`,
-			},
-			expectedAppArgs: [][]byte{
-				{00, 01, 97},
-				{00, 01, 98},
-				{00, 01, 99},
-				{00, 01, 100},
-				{00, 01, 101},
-				{00, 01, 102},
-				{00, 01, 103},
-				{00, 01, 104},
-				{00, 01, 105},
-				{00, 01, 106},
-				{00, 01, 107},
-				{00, 01, 108},
-				{00, 01, 109},
-				{00, 01, 110},
-				{00, 04, 00, 07, 00, 01, 111, 00, 01, 112},
-			},
-		},
-	}
-
-	for i, test := range tests {
-		t.Run(fmt.Sprintf("index=%d", i), func(t *testing.T) {
-			applicationArgs := [][]byte{}
-			err := ParseArgJSONtoByteSlice(test.argTypes, test.jsonArgs, &applicationArgs)
-			require.NoError(t, err)
-			require.Equal(t, test.expectedAppArgs, applicationArgs)
-		})
-	}
-}
-
 func TestParseMethodSignature(t *testing.T) {
 	tests := []struct {
 		signature  string
@@ -1193,6 +1076,56 @@ func TestParseMethodSignature(t *testing.T) {
 			require.Equal(t, test.argTypes, argTypes)
 			require.Equal(t, test.returnType, returnType)
 		})
+	}
+}
+
+func TestVerifyMethodSignature(t *testing.T) {
+	tests := []struct {
+		method string
+		pass   bool
+	}{
+		{
+			method: "abc(uint64)void",
+			pass:   true,
+		},
+		{
+			method: "all_special_args(txn,pay,keyreg,acfg,axfer,afrz,appl,account,application,asset)void",
+			pass:   true,
+		},
+		{
+			method: "abc(uint64)",
+			pass:   false,
+		},
+		{
+			method: "abc(uint65)void",
+			pass:   false,
+		},
+		{
+			method: "(uint64)void",
+			pass:   false,
+		},
+		{
+			method: "abc(uint65,void",
+			pass:   false,
+		},
+		{
+			method: "abc(uint64))void",
+			pass:   false,
+		},
+		{
+			method: "abc",
+			pass:   false,
+		},
+	}
+
+	for _, test := range tests {
+		err := VerifyMethodSignature(test.method)
+
+		if test.pass {
+			require.NoErrorf(t, err, `Unexpected error from method "%s"`, test.method)
+		} else {
+			require.Error(t, err, `Expected an error from method "%s"`, test.method)
+		}
 	}
 }
 
