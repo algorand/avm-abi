@@ -52,6 +52,7 @@ const (
 */
 
 func TestEncodeValid(t *testing.T) {
+	t.Parallel()
 	// encoding test for uint type, iterating through all uint sizes
 	// randomly pick 1000 valid uint values and check if encoded value match with expected
 	for intSize := uintBegin; intSize <= uintEnd; intSize += uintStepLength {
@@ -323,6 +324,7 @@ func TestEncodeValid(t *testing.T) {
 }
 
 func TestDecodeValid(t *testing.T) {
+	t.Parallel()
 	// decoding test for uint, iterating through all valid uint bitSize
 	// randomly take 1000 tests on each valid bitSize
 	// generate bytes from random uint values and decode bytes with additional type information
@@ -628,11 +630,13 @@ func TestDecodeValid(t *testing.T) {
 }
 
 func TestDecodeInvalid(t *testing.T) {
+	t.Parallel()
 	// decoding test for *corrupted* static bool array
 	// expected 9 elements for static bool array
 	// encoded bytes have only 8 bool values
 	// should throw error
 	t.Run("corrupted static bool array decode", func(t *testing.T) {
+		t.Parallel()
 		inputBase := []byte{0b11111111}
 		arrayType := makeStaticArrayType(boolType, 9)
 		_, err := arrayType.Decode(inputBase)
@@ -644,6 +648,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// encoded bytes have 1 byte more (0b00000000)
 	// should throw error
 	t.Run("corrupted static bool array decode", func(t *testing.T) {
+		t.Parallel()
 		inputBase := []byte{0b01001011, 0b00000000}
 		arrayType := makeStaticArrayType(boolType, 8)
 		_, err := arrayType.Decode(inputBase)
@@ -655,6 +660,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// encoded bytes provide only 7 uint64 encoding
 	// should throw error
 	t.Run("static uint array decode", func(t *testing.T) {
+		t.Parallel()
 		inputBase := []byte{
 			0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 1,
@@ -675,6 +681,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// encoded bytes provide 8 uint64 encoding (one more uint64: 7)
 	// should throw error
 	t.Run("static uint array decode", func(t *testing.T) {
+		t.Parallel()
 		inputBase := []byte{
 			0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 1,
@@ -696,6 +703,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// encoded bytes provide only 8 bool elements
 	// should throw error
 	t.Run("corrupted dynamic bool array decode", func(t *testing.T) {
+		t.Parallel()
 		inputBase := []byte{
 			0x00, 0x0A, 0b10101010,
 		}
@@ -709,6 +717,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// encoded bytes provide 1 byte more (0b00000000)
 	// should throw error
 	t.Run("corrupted dynamic bool array decode", func(t *testing.T) {
+		t.Parallel()
 		inputBase := []byte{
 			0x00, 0x07, 0b10101010, 0b00000000,
 		}
@@ -734,6 +743,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// the length exceeds the segment it allocated: 0x0A, 0x00, 0x03, byte('A'), byte('B'), byte('C')
 	// should throw error
 	t.Run("corrupted dynamic tuple decoding", func(t *testing.T) {
+		t.Parallel()
 		inputEncode := []byte{
 			0x00, 0x04, 0b10100000, 0x00, 0x0A,
 			0x00, 0x03, byte('A'), byte('B'), byte('C'),
@@ -759,6 +769,7 @@ func TestDecodeInvalid(t *testing.T) {
 		                <- corrupted byte, 1 byte missing
 	*/
 	t.Run("corrupted static bool array tuple decoding", func(t *testing.T) {
+		t.Parallel()
 		expectedType, err := TypeOf("(bool[2],bool[2])")
 		require.NoError(t, err, "make tuple type failure")
 		encodedInput0 := []byte{
@@ -787,6 +798,7 @@ func TestDecodeInvalid(t *testing.T) {
 	   0b11000000      (second static bool array)
 	*/
 	t.Run("corrupted static/dynamic bool array tuple decoding", func(t *testing.T) {
+		t.Parallel()
 		encodedInput := []byte{
 			0b11000000,
 			0x03,
@@ -813,6 +825,7 @@ func TestDecodeInvalid(t *testing.T) {
 	*/
 	// should return error
 	t.Run("corrupted empty dynamic array tuple decoding", func(t *testing.T) {
+		t.Parallel()
 		encodedInput := []byte{
 			0x00, 0x04, 0x00, 0x07,
 			0x00, 0x00, 0x00, 0x00,
@@ -828,6 +841,7 @@ func TestDecodeInvalid(t *testing.T) {
 	// corrupted input: 0xFF, should be empty byte
 	// should return error
 	t.Run("corrupted empty tuple decoding", func(t *testing.T) {
+		t.Parallel()
 		encodedInput := []byte{0xFF}
 		tupleT, err := TypeOf("()")
 		require.NoError(t, err, "make tuple type failure")
@@ -1021,6 +1035,7 @@ func addTupleRandomValues(t *testing.T, slotRange BaseType, pool *map[BaseType][
 }
 
 func TestRandomABIEncodeDecodeRoundTrip(t *testing.T) {
+	t.Parallel()
 	testValuePool := make(map[BaseType][]testUnit)
 	addPrimitiveRandomValues(t, &testValuePool)
 	addArrayRandomValues(t, &testValuePool)
@@ -1030,6 +1045,7 @@ func TestRandomABIEncodeDecodeRoundTrip(t *testing.T) {
 }
 
 func TestParseMethodSignature(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		signature  string
 		name       string
@@ -1080,6 +1096,7 @@ func TestParseMethodSignature(t *testing.T) {
 }
 
 func TestVerifyMethodSignature(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		method string
 		pass   bool
@@ -1130,6 +1147,7 @@ func TestVerifyMethodSignature(t *testing.T) {
 }
 
 func TestInferToSlice(t *testing.T) {
+	t.Parallel()
 	var emptySlice []int
 	tests := []struct {
 		toBeInferred interface{}
