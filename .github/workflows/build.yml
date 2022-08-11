@@ -1,4 +1,4 @@
-name: "Build and Test"
+name: build
 
 on:
   pull_request:
@@ -17,12 +17,9 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version-file: 'go.mod'
-      
-    - name: Check Go Version
-      run: go version
 
     - name: Build
-      run: go build -v ./...
+      run: make build
 
     - name: Test
       run: go test ./... -race -covermode=atomic -coverprofile=coverage.out
