@@ -12,6 +12,7 @@ import (
 )
 
 func TestMakeTypeValid(t *testing.T) {
+	t.Parallel()
 	// uint
 	for i := 8; i <= 512; i += 8 {
 		uintType, err := makeUintType(i)
@@ -127,6 +128,7 @@ func TestMakeTypeValid(t *testing.T) {
 }
 
 func TestMakeTypeInvalid(t *testing.T) {
+	t.Parallel()
 	// uint
 	for i := 0; i <= 1000; i++ {
 		randInput := rand.Uint32() % (1 << 16)
@@ -153,6 +155,7 @@ func TestMakeTypeInvalid(t *testing.T) {
 }
 
 func TestTypeFromStringValid(t *testing.T) {
+	t.Parallel()
 	// uint
 	for i := 8; i <= 512; i += 8 {
 		expected, err := makeUintType(i)
@@ -361,6 +364,7 @@ func TestTypeFromStringValid(t *testing.T) {
 }
 
 func TestTypeFromStringInvalid(t *testing.T) {
+	t.Parallel()
 	for i := 0; i <= 1000; i++ {
 		randSize := rand.Uint64()
 		for randSize%8 == 0 && randSize <= 512 && randSize >= 8 {
@@ -449,6 +453,7 @@ func generateTupleType(baseTypes []Type, tupleTypes []Type) Type {
 }
 
 func TestTypeMISC(t *testing.T) {
+	t.Parallel()
 	rand.Seed(time.Now().Unix())
 
 	var testpool = []Type{

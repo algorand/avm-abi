@@ -3,7 +3,11 @@ build:
 	go build -v ./...
 
 test:
-	go test ./...
+	go test ./... -race
+
+test-coverage:
+	$(if $(output),,$(error "output" variable not set))
+	go test ./... -race -covermode=atomic -coverprofile=$(output)
 
 fmt:
 	go fmt ./...
