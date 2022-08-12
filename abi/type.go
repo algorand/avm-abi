@@ -8,39 +8,29 @@ import (
 	"strings"
 )
 
-/*
-   ABI-Types: uint<N>: An N-bit unsigned integer (8 <= N <= 512 and N % 8 = 0).
-            | byte (alias for uint8)
-            | ufixed <N> x <M> (8 <= N <= 512, N % 8 = 0, and 0 < M <= 160)
-            | bool
-            | address (alias for byte[32])
-            | <type> [<N>]
-            | <type> []
-            | string
-            | (T1, ..., Tn)
-*/
-
-// BaseType is an type-alias for uint32. A BaseType value indicates the type of an ABI value.
-type BaseType uint32
+// TypeKind is an enum value which indicates the kind of an ABI type.
+type TypeKind uint32
 
 const (
-	// Uint is the index (0) for `Uint` type in ABI encoding.
-	Uint BaseType = iota
-	// Byte is the index (1) for `Byte` type in ABI encoding.
+	// InvalidType represents an invalid and unused kind.
+	InvalidType = iota
+	// Uint is kind for ABI unsigned integer types, i.e. `uint<N>`.
+	Uint
+	// Byte is kind for the ABI `byte` type.
 	Byte
-	// Ufixed is the index (2) for `UFixed` type in ABI encoding.
+	// Ufixed is the kind for ABI unsigned fixed point decimal types, i.e. `ufixed<N>x<M>`.
 	Ufixed
-	// Bool is the index (3) for `Bool` type in ABI encoding.
+	// Bool is the kind for the ABI `bool` type.
 	Bool
-	// ArrayStatic is the index (4) for static length array (<type>[length]) type in ABI encoding.
+	// ArrayStatic is the kind for ABI static array types, i.e. `<type>[<length>]`.
 	ArrayStatic
-	// Address is the index (5) for `Address` type in ABI encoding (an type alias of Byte[32]).
+	// Address is the the kind for the ABI `address` type.
 	Address
-	// ArrayDynamic is the index (6) for dynamic length array (<type>[]) type in ABI encoding.
+	// ArrayDynamic is the kind for ABI dynamic array types, i.e. `<type>[]`.
 	ArrayDynamic
-	// String is the index (7) for `String` type in ABI encoding (an type alias of Byte[]).
+	// String is the kind for the ABI `string` type.
 	String
-	// Tuple is the index (8) for tuple `(<type 0>, ..., <type k>)` in ABI encoding.
+	// Tuple is the kind for ABI tuple types, i.e. `(<type 0>,...,<type k>)`.
 	Tuple
 )
 
@@ -53,9 +43,12 @@ const (
 	abiEncodingLengthLimit = 1 << 16
 )
 
-// Type is the struct that stores information about an ABI value's type.
+// Type is the struct that represents an ABI type.
+//
+// Do not use the zero value of this struct. Use the `TypeOf` function to create an instance of an
+// ABI type.
 type Type struct {
-	abiTypeID  BaseType
+	kind       TypeKind
 	childTypes []Type
 
 	// only can be applied to `uint` bitSize <N> or `ufixed` bitSize <N>
@@ -75,7 +68,7 @@ type Type struct {
 
 // String serialize an ABI Type to a string in ABI encoding.
 func (t Type) String() string {
-	switch t.abiTypeID {
+	switch t.kind {
 	case Uint:
 		return fmt.Sprintf("uint%d", t.bitSize)
 	case Byte:
@@ -99,7 +92,7 @@ func (t Type) String() string {
 		}
 		return "(" + strings.Join(typeStrings, ",") + ")"
 	default:
-		panic("Type Serialization Error, fail to infer from abiTypeID (bruh you shouldn't be here)")
+		return "<invalid type>"
 	}
 }
 
@@ -275,23 +268,23 @@ func makeUintType(typeSize int) (Type, error) {
 		return Type{}, fmt.Errorf("unsupported uint type bitSize: %d", typeSize)
 	}
 	return Type{
-		abiTypeID: Uint,
-		bitSize:   uint16(typeSize),
+		kind:    Uint,
+		bitSize: uint16(typeSize),
 	}, nil
 }
 
 var (
 	// byteType is ABI type constant for byte
-	byteType = Type{abiTypeID: Byte}
+	byteType = Type{kind: Byte}
 
 	// boolType is ABI type constant for bool
-	boolType = Type{abiTypeID: Bool}
+	boolType = Type{kind: Bool}
 
 	// addressType is ABI type constant for address
-	addressType = Type{abiTypeID: Address}
+	addressType = Type{kind: Address}
 
 	// stringType is ABI type constant for string
-	stringType = Type{abiTypeID: String}
+	stringType = Type{kind: String}
 )
 
 // makeUfixedType makes `UFixed` ABI type by taking type bitSize and type precision as arguments.
@@ -305,7 +298,7 @@ func makeUfixedType(typeSize int, typePrecision int) (Type, error) {
 		return Type{}, fmt.Errorf("unsupported ufixed type precision: %d", typePrecision)
 	}
 	return Type{
-		abiTypeID: Ufixed,
+		kind:      Ufixed,
 		bitSize:   uint16(typeSize),
 		precision: uint16(typePrecision),
 	}, nil
@@ -315,7 +308,7 @@ func makeUfixedType(typeSize int, typePrecision int) (Type, error) {
 // array element type and array length as arguments.
 func makeStaticArrayType(argumentType Type, arrayLength uint16) Type {
 	return Type{
-		abiTypeID:    ArrayStatic,
+		kind:         ArrayStatic,
 		childTypes:   []Type{argumentType},
 		staticLength: arrayLength,
 	}
@@ -324,7 +317,7 @@ func makeStaticArrayType(argumentType Type, arrayLength uint16) Type {
 // makeDynamicArrayType makes dynamic length array by taking array element type as argument.
 func makeDynamicArrayType(argumentType Type) Type {
 	return Type{
-		abiTypeID:  ArrayDynamic,
+		kind:       ArrayDynamic,
 		childTypes: []Type{argumentType},
 	}
 }
@@ -335,7 +328,7 @@ func MakeTupleType(argumentTypes []Type) (Type, error) {
 		return Type{}, fmt.Errorf("tuple type child type number larger than maximum uint16 error")
 	}
 	return Type{
-		abiTypeID:    Tuple,
+		kind:         Tuple,
 		childTypes:   argumentTypes,
 		staticLength: uint16(len(argumentTypes)),
 	}, nil
@@ -343,7 +336,7 @@ func MakeTupleType(argumentTypes []Type) (Type, error) {
 
 // Equal method decides the equality of two types: t == t0.
 func (t Type) Equal(t0 Type) bool {
-	if t.abiTypeID != t0.abiTypeID {
+	if t.kind != t0.kind {
 		return false
 	}
 	if t.precision != t0.precision || t.bitSize != t0.bitSize {
@@ -366,7 +359,7 @@ func (t Type) Equal(t0 Type) bool {
 
 // IsDynamic method decides if an ABI type is dynamic or static.
 func (t Type) IsDynamic() bool {
-	switch t.abiTypeID {
+	switch t.kind {
 	case ArrayDynamic, String:
 		return true
 	default:
@@ -385,7 +378,7 @@ func findBoolLR(typeList []Type, index int, delta int) int {
 	until := 0
 	for {
 		curr := index + delta*until
-		if typeList[curr].abiTypeID == Bool {
+		if typeList[curr].kind == Bool {
 			if curr != len(typeList)-1 && delta > 0 {
 				until++
 			} else if curr > 0 && delta < 0 {
@@ -403,7 +396,7 @@ func findBoolLR(typeList []Type, index int, delta int) int {
 
 // ByteLen method calculates the byte length of a static ABI type.
 func (t Type) ByteLen() (int, error) {
-	switch t.abiTypeID {
+	switch t.kind {
 	case Address:
 		return addressByteSize, nil
 	case Byte:
@@ -413,7 +406,7 @@ func (t Type) ByteLen() (int, error) {
 	case Bool:
 		return singleBoolSize, nil
 	case ArrayStatic:
-		if t.childTypes[0].abiTypeID == Bool {
+		if t.childTypes[0].kind == Bool {
 			byteLen := int(t.staticLength+7) / 8
 			return byteLen, nil
 		}
@@ -425,7 +418,7 @@ func (t Type) ByteLen() (int, error) {
 	case Tuple:
 		size := 0
 		for i := 0; i < len(t.childTypes); i++ {
-			if t.childTypes[i].abiTypeID == Bool {
+			if t.childTypes[i].kind == Bool {
 				// search after bool
 				after := findBoolLR(t.childTypes, i, 1)
 				// shift the index

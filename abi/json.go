@@ -77,7 +77,7 @@ func castBigIntToNearestPrimitive(num *big.Int, bitSize uint16) (interface{}, er
 
 // MarshalToJSON convert golang value to JSON format from ABI type
 func (t Type) MarshalToJSON(value interface{}) ([]byte, error) {
-	switch t.abiTypeID {
+	switch t.kind {
 	case Uint:
 		bytesUint, err := encodeInt(value, t.bitSize)
 		if err != nil {
@@ -122,10 +122,10 @@ func (t Type) MarshalToJSON(value interface{}) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if t.abiTypeID == ArrayStatic && int(t.staticLength) != len(values) {
+		if t.kind == ArrayStatic && int(t.staticLength) != len(values) {
 			return nil, fmt.Errorf("length of slice %d != type specific length %d", len(values), t.staticLength)
 		}
-		if t.childTypes[0].abiTypeID == Byte {
+		if t.childTypes[0].kind == Byte {
 			byteArr := make([]byte, len(values))
 			for i := 0; i < len(values); i++ {
 				tempByte, ok := values[i].(byte)
@@ -173,7 +173,7 @@ func (t Type) MarshalToJSON(value interface{}) ([]byte, error) {
 
 // UnmarshalFromJSON convert bytes to golang value following ABI type and encoding rules
 func (t Type) UnmarshalFromJSON(jsonEncoded []byte) (interface{}, error) {
-	switch t.abiTypeID {
+	switch t.kind {
 	case Uint:
 		num := new(big.Int)
 		if err := num.UnmarshalJSON(jsonEncoded); err != nil {
@@ -217,13 +217,13 @@ func (t Type) UnmarshalFromJSON(jsonEncoded []byte) (interface{}, error) {
 
 		return addrBytes[:], nil
 	case ArrayStatic, ArrayDynamic:
-		if t.childTypes[0].abiTypeID == Byte && bytes.HasPrefix(jsonEncoded, []byte{'"'}) {
+		if t.childTypes[0].kind == Byte && bytes.HasPrefix(jsonEncoded, []byte{'"'}) {
 			var byteArr []byte
 			err := json.Unmarshal(jsonEncoded, &byteArr)
 			if err != nil {
 				return nil, fmt.Errorf("cannot cast JSON encoded (%s) to bytes: %w", string(jsonEncoded), err)
 			}
-			if t.abiTypeID == ArrayStatic && len(byteArr) != int(t.staticLength) {
+			if t.kind == ArrayStatic && len(byteArr) != int(t.staticLength) {
 				return nil, fmt.Errorf("length of slice %d != type specific length %d", len(byteArr), t.staticLength)
 			}
 			outInterface := make([]interface{}, len(byteArr))
@@ -236,7 +236,7 @@ func (t Type) UnmarshalFromJSON(jsonEncoded []byte) (interface{}, error) {
 		if err := json.Unmarshal(jsonEncoded, &elems); err != nil {
 			return nil, fmt.Errorf("cannot cast JSON encoded (%s) to array: %w", string(jsonEncoded), err)
 		}
-		if t.abiTypeID == ArrayStatic && len(elems) != int(t.staticLength) {
+		if t.kind == ArrayStatic && len(elems) != int(t.staticLength) {
 			return nil, fmt.Errorf("JSON array element number != ABI array elem number")
 		}
 		values := make([]interface{}, len(elems))

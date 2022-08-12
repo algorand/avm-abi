@@ -46,8 +46,8 @@ func TestMakeTypeValid(t *testing.T) {
 		{
 			input: makeDynamicArrayType(
 				Type{
-					abiTypeID: Uint,
-					bitSize:   uint16(32),
+					kind:    Uint,
+					bitSize: uint16(32),
 				},
 			),
 			testType: "dynamic array",
@@ -65,7 +65,7 @@ func TestMakeTypeValid(t *testing.T) {
 		{
 			input: makeStaticArrayType(
 				Type{
-					abiTypeID: Ufixed,
+					kind:      Ufixed,
 					bitSize:   uint16(128),
 					precision: uint16(10),
 				},
@@ -88,21 +88,21 @@ func TestMakeTypeValid(t *testing.T) {
 		// tuple type
 		{
 			input: Type{
-				abiTypeID: Tuple,
+				kind: Tuple,
 				childTypes: []Type{
 					{
-						abiTypeID: Uint,
-						bitSize:   uint16(32),
+						kind:    Uint,
+						bitSize: uint16(32),
 					},
 					{
-						abiTypeID: Tuple,
+						kind: Tuple,
 						childTypes: []Type{
 							addressType,
 							byteType,
 							makeStaticArrayType(boolType, uint16(10)),
 							makeDynamicArrayType(
 								Type{
-									abiTypeID: Ufixed,
+									kind:      Ufixed,
 									bitSize:   uint16(256),
 									precision: uint16(10),
 								},
@@ -129,6 +129,8 @@ func TestMakeTypeValid(t *testing.T) {
 
 func TestMakeTypeInvalid(t *testing.T) {
 	t.Parallel()
+	// zero value
+	require.Equal(t, "<invalid type>", Type{}.String())
 	// uint
 	for i := 0; i <= 1000; i++ {
 		randInput := rand.Uint32() % (1 << 16)
@@ -188,14 +190,14 @@ func TestTypeFromStringValid(t *testing.T) {
 		{
 			input:    "uint256[]",
 			testType: "dynamic array",
-			expected: makeDynamicArrayType(Type{abiTypeID: Uint, bitSize: 256}),
+			expected: makeDynamicArrayType(Type{kind: Uint, bitSize: 256}),
 		},
 		{
 			input:    "ufixed256x64[]",
 			testType: "dynamic array",
 			expected: makeDynamicArrayType(
 				Type{
-					abiTypeID: Ufixed,
+					kind:      Ufixed,
 					bitSize:   256,
 					precision: 64,
 				},
@@ -228,7 +230,7 @@ func TestTypeFromStringValid(t *testing.T) {
 			testType: "static array",
 			expected: makeStaticArrayType(
 				makeDynamicArrayType(
-					Type{abiTypeID: Uint, bitSize: uint16(64)},
+					Type{kind: Uint, bitSize: uint16(64)},
 				),
 				uint16(200),
 			),
@@ -238,7 +240,7 @@ func TestTypeFromStringValid(t *testing.T) {
 			input:    "()",
 			testType: "tuple type",
 			expected: Type{
-				abiTypeID:    Tuple,
+				kind:         Tuple,
 				childTypes:   []Type{},
 				staticLength: 0,
 			},
@@ -247,21 +249,21 @@ func TestTypeFromStringValid(t *testing.T) {
 			input:    "(uint32,(address,byte,bool[10],ufixed256x10[]),byte[])",
 			testType: "tuple type",
 			expected: Type{
-				abiTypeID: Tuple,
+				kind: Tuple,
 				childTypes: []Type{
 					{
-						abiTypeID: Uint,
-						bitSize:   uint16(32),
+						kind:    Uint,
+						bitSize: uint16(32),
 					},
 					{
-						abiTypeID: Tuple,
+						kind: Tuple,
 						childTypes: []Type{
 							addressType,
 							byteType,
 							makeStaticArrayType(boolType, uint16(10)),
 							makeDynamicArrayType(
 								Type{
-									abiTypeID: Ufixed,
+									kind:      Ufixed,
 									bitSize:   uint16(256),
 									precision: uint16(10),
 								},
@@ -278,24 +280,24 @@ func TestTypeFromStringValid(t *testing.T) {
 			input:    "(uint32,(address,byte,bool[10],(ufixed256x10[])))",
 			testType: "tuple type",
 			expected: Type{
-				abiTypeID: Tuple,
+				kind: Tuple,
 				childTypes: []Type{
 					{
-						abiTypeID: Uint,
-						bitSize:   uint16(32),
+						kind:    Uint,
+						bitSize: uint16(32),
 					},
 					{
-						abiTypeID: Tuple,
+						kind: Tuple,
 						childTypes: []Type{
 							addressType,
 							byteType,
 							makeStaticArrayType(boolType, uint16(10)),
 							{
-								abiTypeID: Tuple,
+								kind: Tuple,
 								childTypes: []Type{
 									makeDynamicArrayType(
 										Type{
-											abiTypeID: Ufixed,
+											kind:      Ufixed,
 											bitSize:   uint16(256),
 											precision: uint16(10),
 										},
@@ -314,30 +316,30 @@ func TestTypeFromStringValid(t *testing.T) {
 			input:    "((uint32),(address,(byte,bool[10],ufixed256x10[])))",
 			testType: "tuple type",
 			expected: Type{
-				abiTypeID: Tuple,
+				kind: Tuple,
 				childTypes: []Type{
 					{
-						abiTypeID: Tuple,
+						kind: Tuple,
 						childTypes: []Type{
 							{
-								abiTypeID: Uint,
-								bitSize:   uint16(32),
+								kind:    Uint,
+								bitSize: uint16(32),
 							},
 						},
 						staticLength: 1,
 					},
 					{
-						abiTypeID: Tuple,
+						kind: Tuple,
 						childTypes: []Type{
 							addressType,
 							{
-								abiTypeID: Tuple,
+								kind: Tuple,
 								childTypes: []Type{
 									byteType,
 									makeStaticArrayType(boolType, uint16(10)),
 									makeDynamicArrayType(
 										Type{
-											abiTypeID: Ufixed,
+											kind:      Ufixed,
 											bitSize:   uint16(256),
 											precision: uint16(10),
 										},
@@ -449,7 +451,7 @@ func generateTupleType(baseTypes []Type, tupleTypes []Type) Type {
 			resultTypes[i] = baseTypes[rand.Intn(len(baseTypes))]
 		}
 	}
-	return Type{abiTypeID: Tuple, childTypes: resultTypes, staticLength: uint16(tupleLen)}
+	return Type{kind: Tuple, childTypes: resultTypes, staticLength: uint16(tupleLen)}
 }
 
 func TestTypeMISC(t *testing.T) {
@@ -548,10 +550,10 @@ func TestTypeMISC(t *testing.T) {
 				testType.String())
 		} else {
 			require.NoError(t, err, "byteLen test error on %s dynamic type, should not have error")
-			if testType.abiTypeID == Tuple {
+			if testType.kind == Tuple {
 				sizeSum := 0
 				for i := 0; i < len(testType.childTypes); i++ {
-					if testType.childTypes[i].abiTypeID == Bool {
+					if testType.childTypes[i].kind == Bool {
 						// search previous bool
 						before := findBoolLR(testType.childTypes, i, -1)
 						// search after bool
@@ -572,8 +574,8 @@ func TestTypeMISC(t *testing.T) {
 
 				require.Equal(t, sizeSum, byteLen,
 					"%s do not match calculated byte length %d", testType.String(), sizeSum)
-			} else if testType.abiTypeID == ArrayStatic {
-				if testType.childTypes[0].abiTypeID == Bool {
+			} else if testType.kind == ArrayStatic {
+				if testType.childTypes[0].kind == Bool {
 					expected := testType.staticLength / 8
 					if testType.staticLength%8 != 0 {
 						expected++

@@ -12,7 +12,7 @@ import (
 func (t Type) typeCastToTuple(tupLen ...int) (Type, error) {
 	var childT []Type
 
-	switch t.abiTypeID {
+	switch t.kind {
 	case String:
 		if len(tupLen) != 1 {
 			return Type{}, fmt.Errorf("string type conversion to tuple need 1 length argument")
@@ -52,7 +52,7 @@ func (t Type) typeCastToTuple(tupLen ...int) (Type, error) {
 
 // Encode is an ABI type method to encode go values into bytes following ABI encoding rules
 func (t Type) Encode(value interface{}) ([]byte, error) {
-	switch t.abiTypeID {
+	switch t.kind {
 	case Uint, Ufixed:
 		return encodeInt(value, t.bitSize)
 	case Bool:
@@ -211,7 +211,7 @@ func encodeTuple(value interface{}, childT []Type) ([]byte, error) {
 			}
 			tails[i] = tailEncoding
 			isDynamicIndex[i] = true
-		} else if childT[i].abiTypeID == Bool {
+		} else if childT[i].kind == Bool {
 			// search previous bool
 			before := findBoolLR(childT, i, -1)
 			// search after bool
@@ -317,7 +317,7 @@ func decodeUint(encoded []byte, bitSize uint16) (interface{}, error) {
 
 // Decode is an ABI type method to decode bytes to go values from ABI encoding rules
 func (t Type) Decode(encoded []byte) (interface{}, error) {
-	switch t.abiTypeID {
+	switch t.kind {
 	case Uint, Ufixed:
 		return decodeUint(encoded, t.bitSize)
 	case Bool:
@@ -389,7 +389,7 @@ func decodeTuple(encoded []byte, childT []Type) ([]interface{}, error) {
 			dynamicSegments = append(dynamicSegments, int(dynamicIndex))
 			valuePartition = append(valuePartition, nil)
 			iterIndex += lengthEncodeByteSize
-		} else if childT[i].abiTypeID == Bool {
+		} else if childT[i].kind == Bool {
 			// search previous bool
 			before := findBoolLR(childT, i, -1)
 			// search after bool
