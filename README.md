@@ -11,6 +11,8 @@ An implementation of the Algorand [ARC-4](https://arc.algorand.foundation/ARCs/a
 
 ## Installation
 
+This module can be installed using the `go get` command.
+
 ```sh
-go get github.com/algorand/avm-abi
+go get github.com/algorand/avm-abi/abi
 ```
