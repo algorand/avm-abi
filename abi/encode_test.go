@@ -885,7 +885,7 @@ func categorySelfRoundTripTest(t *testing.T, category []testUnit) {
 	}
 }
 
-func addPrimitiveRandomValues(t *testing.T, pool *map[BaseType][]testUnit) {
+func addPrimitiveRandomValues(t *testing.T, pool *map[TypeKind][]testUnit) {
 	(*pool)[Uint] = make([]testUnit, uintTestCaseCount*uintEnd/uintStepLength)
 	(*pool)[Ufixed] = make([]testUnit, ufixedPrecision*uintEnd/uintStepLength)
 
@@ -964,7 +964,7 @@ func addPrimitiveRandomValues(t *testing.T, pool *map[BaseType][]testUnit) {
 }
 
 func takeSomeFromCategoryAndGenerateArray(
-	t *testing.T, abiT BaseType, srtIndex int, takeNum uint16, pool *map[BaseType][]testUnit) {
+	t *testing.T, abiT TypeKind, srtIndex int, takeNum uint16, pool *map[TypeKind][]testUnit) {
 
 	tempArray := make([]interface{}, takeNum)
 	for i := 0; i < int(takeNum); i++ {
@@ -986,7 +986,7 @@ func takeSomeFromCategoryAndGenerateArray(
 	})
 }
 
-func addArrayRandomValues(t *testing.T, pool *map[BaseType][]testUnit) {
+func addArrayRandomValues(t *testing.T, pool *map[TypeKind][]testUnit) {
 	for intIndex := 0; intIndex < len((*pool)[Uint]); intIndex += uintTestCaseCount {
 		takeSomeFromCategoryAndGenerateArray(t, Uint, intIndex, takeNum, pool)
 	}
@@ -999,16 +999,16 @@ func addArrayRandomValues(t *testing.T, pool *map[BaseType][]testUnit) {
 	categorySelfRoundTripTest(t, (*pool)[ArrayDynamic])
 }
 
-func addTupleRandomValues(t *testing.T, slotRange BaseType, pool *map[BaseType][]testUnit) {
+func addTupleRandomValues(t *testing.T, slotRange TypeKind, pool *map[TypeKind][]testUnit) {
 	for i := 0; i < tupleTestCaseCount; i++ {
 		tupleLenBig, err := rand.Int(rand.Reader, big.NewInt(tupleMaxLength))
 		require.NoError(t, err, "generate random tuple length should not return error")
 		tupleLen := tupleLenBig.Int64() + 1
 		testUnits := make([]testUnit, tupleLen)
 		for index := 0; index < int(tupleLen); index++ {
-			tupleTypeIndexBig, err := rand.Int(rand.Reader, big.NewInt(int64(slotRange)+1))
+			tupleTypeIndexBig, err := rand.Int(rand.Reader, big.NewInt(int64(slotRange)))
 			require.NoError(t, err, "generate random tuple element type index should not return error")
-			tupleTypeIndex := BaseType(tupleTypeIndexBig.Int64())
+			tupleTypeIndex := TypeKind(tupleTypeIndexBig.Int64() + 1)
 			tupleElemChoiceRange := len((*pool)[tupleTypeIndex])
 
 			tupleElemRangeIndexBig, err := rand.Int(rand.Reader, big.NewInt(int64(tupleElemChoiceRange)))
@@ -1036,7 +1036,7 @@ func addTupleRandomValues(t *testing.T, slotRange BaseType, pool *map[BaseType][
 
 func TestRandomABIEncodeDecodeRoundTrip(t *testing.T) {
 	t.Parallel()
-	testValuePool := make(map[BaseType][]testUnit)
+	testValuePool := make(map[TypeKind][]testUnit)
 	addPrimitiveRandomValues(t, &testValuePool)
 	addArrayRandomValues(t, &testValuePool)
 	addTupleRandomValues(t, String, &testValuePool)
