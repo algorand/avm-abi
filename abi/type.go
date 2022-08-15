@@ -12,8 +12,8 @@ import (
 type TypeKind uint32
 
 const (
-	// InvalidType represents an invalid and unused kind.
-	InvalidType = iota
+	// InvalidType represents an invalid and unused TypeKind.
+	InvalidType TypeKind = iota
 	// Uint is kind for ABI unsigned integer types, i.e. `uint<N>`.
 	Uint
 	// Byte is kind for the ABI `byte` type.
