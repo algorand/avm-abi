@@ -50,7 +50,25 @@ func (t Type) typeCastToTuple(tupLen ...int) (Type, error) {
 	return tuple, nil
 }
 
-// Encode is an ABI type method to encode go values into bytes following ABI encoding rules
+// Encode is an ABI type method to encode Go values into ABI encoded bytes.
+//
+// Depending on the ABI type instance, different values are acceptable for this
+// method.
+//
+// The ABI `bool` type accepts Go bool types.
+//
+// The ABI `byte` type accepts Go byte/uint8 types.
+//
+// The ABI `uint<N>` and `ufixed<N>x<M>` types accept all native Go integer
+// types (uint/uint8/uint16/uint32/uint64/int/int8/int16/int32/int64) and
+// *big.Int. However, an error will be returned if a negative value is given.
+//
+// The ABI `string` type accepts Go string types.
+//
+// The ABI `address`, static array, dynamic array, and tuple types accept slices
+// and arrays of interfaces or specific types that are compatible with the
+// contents of the ABI type's contained types. For example, the `address` type
+// accepts Go types []interface{}, [32]interface{}, []byte, and [32]byte.
 func (t Type) Encode(value interface{}) ([]byte, error) {
 	switch t.kind {
 	case Uint, Ufixed:
@@ -315,7 +333,20 @@ func decodeUint(encoded []byte, bitSize uint16) (interface{}, error) {
 	}
 }
 
-// Decode is an ABI type method to decode bytes to go values from ABI encoding rules
+// Decode is an ABI type method to decode bytes to Go values.
+//
+// To decode an encoded ABI value to a Go interface value, this function stores
+// the result in one of these interface values:
+//
+//	bool, for ABI `bool` types
+//	uint8/byte, for ABI `byte`, `uint8`, and `ufixed8x<M>` types, for all `M`
+//	uint16, for ABI `uint16` and `ufixed16x<M>` types, for all `M`
+//	uint32, for ABI `uint24`, `uint32`, `ufixed24x<M>`, and `ufixed24x<M>` types, for all `M`
+//	uint64, for ABI `uint48`, `uint56`, `uint64`, `ufixed48x<M>`, `ufixed56x<M>`, `ufixed64x<M>`, for all `M`
+//	*big.Int, for ABI `uint<N>` and `ufixed<N>x<M>`, for all 72 <= `N` <= 512, and all `M`
+//	string, for ABI `string` types
+//	[]byte, for ABI `address` types
+//	[]interface{}, for ABI static array, dynamic array, and tuple types
 func (t Type) Decode(encoded []byte) (interface{}, error) {
 	switch t.kind {
 	case Uint, Ufixed:
