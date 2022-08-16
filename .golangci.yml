@@ -7,7 +7,7 @@ linters:
   enable:
     - errcheck
     - gofmt
-    - golint
+    - revive
     - govet
     - ineffassign
     - misspell

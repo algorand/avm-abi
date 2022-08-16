@@ -279,7 +279,7 @@ func encodeTuple(value interface{}, childT []Type) ([]byte, error) {
 // compressBools takes a slice of interface{} (which can be casted to bools) length <= 8
 // and compress the bool values into a uint8 integer
 func compressBools(boolSlice []interface{}) (uint8, error) {
-	var res uint8 = 0
+	var res uint8
 	if len(boolSlice) > 8 {
 		return 0, fmt.Errorf("compressBools: cannot have slice length > 8")
 	}

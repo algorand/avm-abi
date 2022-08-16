@@ -1193,7 +1193,7 @@ func TestInferToSlice(t *testing.T) {
 		"inferToSlice should return type inference error when passed in nil with unexpected Kind")
 
 	// one moar testcase for wrong typed nil is bad, should not pass the test
-	var nilPt *uint64 = nil
+	var nilPt *uint64
 	_, err = inferToSlice(nilPt)
 	require.EqualError(
 		t, err,
