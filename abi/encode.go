@@ -50,7 +50,7 @@ func (t Type) typeCastToTuple(tupLen ...int) (Type, error) {
 	return tuple, nil
 }
 
-// Encode is an ABI type method to encode Go values into ABI encoded bytes.
+// Encode is an ABI type method to encode Go values into bytes.
 //
 // Depending on the ABI type instance, different values are acceptable for this
 // method.
@@ -341,7 +341,7 @@ func decodeUint(encoded []byte, bitSize uint16) (interface{}, error) {
 //	bool, for ABI `bool` types
 //	uint8/byte, for ABI `byte`, `uint8`, and `ufixed8x<M>` types, for all `M`
 //	uint16, for ABI `uint16` and `ufixed16x<M>` types, for all `M`
-//	uint32, for ABI `uint24`, `uint32`, `ufixed24x<M>`, and `ufixed24x<M>` types, for all `M`
+//	uint32, for ABI `uint24`, `uint32`, `ufixed24x<M>`, and `ufixed32x<M>` types, for all `M`
 //	uint64, for ABI `uint48`, `uint56`, `uint64`, `ufixed48x<M>`, `ufixed56x<M>`, `ufixed64x<M>`, for all `M`
 //	*big.Int, for ABI `uint<N>` and `ufixed<N>x<M>`, for all 72 <= `N` <= 512, and all `M`
 //	string, for ABI `string` types
