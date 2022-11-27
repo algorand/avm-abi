@@ -24,7 +24,7 @@ const (
 	Bool
 	// ArrayStatic is the kind for ABI static array types, i.e. `<type>[<length>]`.
 	ArrayStatic
-	// Address is the the kind for the ABI `address` type.
+	// Address is the kind for the ABI `address` type.
 	Address
 	// ArrayDynamic is the kind for ABI dynamic array types, i.e. `<type>[]`.
 	ArrayDynamic
@@ -162,6 +162,13 @@ func TypeOf(str string) (Type, error) {
 	case str == "string":
 		return stringType, nil
 	case len(str) >= 2 && str[0] == '(' && str[len(str)-1] == ')':
+		// first start a rough check on if the number of brackets are balancing
+		if strings.Count(str, "(") != strings.Count(str, ")") {
+			return Type{}, fmt.Errorf("parsing error: tuple round bracket unbalanced")
+		}
+		if strings.Count(str, "[") != strings.Count(str, "]") {
+			return Type{}, fmt.Errorf("parsing error: tuple square bracket unbalanced")
+		}
 		tupleContent, err := parseTupleContent(str[1 : len(str)-1])
 		if err != nil {
 			return Type{}, err
@@ -186,8 +193,9 @@ type segment struct{ left, right int }
 // parseTupleContent splits an ABI encoded string for tuple type into multiple sub-strings.
 // Each sub-string represents a content type of the tuple type.
 // The argument str is the content between parentheses of tuple, i.e.
+//
 // (...... str ......)
-//  ^               ^
+//	^               ^
 func parseTupleContent(str string) ([]string, error) {
 	// if the tuple type content is empty (which is also allowed)
 	// just return the empty string list
@@ -216,7 +224,8 @@ func parseTupleContent(str string) ([]string, error) {
 	// once iterate to left paren (, stack up by 1 in stack
 	// iterate to right paren ), pop 1 in stack
 	// if iterate to right paren ) with stack height 0, find a parenthesis segment "(******)"
-	for index, chr := range str {
+	for index := 0; index < len(str); index++ {
+		chr := str[index]
 		if chr == '(' {
 			stack = append(stack, index)
 		} else if chr == ')' {
@@ -226,6 +235,12 @@ func parseTupleContent(str string) ([]string, error) {
 			leftParenIndex := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			if len(stack) == 0 {
+				// increase index til it meets comma, or end of string
+				forwardIndex := index + 1
+				for forwardIndex < len(str) && str[forwardIndex] != ',' {
+					forwardIndex++
+				}
+				index = forwardIndex - 1
 				parenSegmentRecord = append(parenSegmentRecord, segment{
 					left:  leftParenIndex,
 					right: index,
