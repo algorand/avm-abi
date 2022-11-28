@@ -162,13 +162,6 @@ func TypeOf(str string) (Type, error) {
 	case str == "string":
 		return stringType, nil
 	case len(str) >= 2 && str[0] == '(' && str[len(str)-1] == ')':
-		// first start a rough check on if the number of brackets are balancing
-		if strings.Count(str, "(") != strings.Count(str, ")") {
-			return Type{}, fmt.Errorf("parsing error: tuple round bracket unbalanced")
-		}
-		if strings.Count(str, "[") != strings.Count(str, "]") {
-			return Type{}, fmt.Errorf("parsing error: tuple square bracket unbalanced")
-		}
 		tupleContent, err := parseTupleContent(str[1 : len(str)-1])
 		if err != nil {
 			return Type{}, err
