@@ -85,6 +85,24 @@ func TestMakeTypeValid(t *testing.T) {
 			testType: "static array",
 			expected: "bool[128][256]",
 		},
+		{
+			input: makeStaticArrayType(
+				Type{
+					kind: Tuple,
+					childTypes: []Type{
+						byteType,
+						{
+							kind:    Uint,
+							bitSize: uint16(64),
+						},
+					},
+					staticLength: 2,
+				},
+				uint16(10),
+			),
+			testType: "static array",
+			expected: "(byte,uint64)[10]",
+		},
 		// tuple type
 		{
 			input: Type{
@@ -354,6 +372,84 @@ func TestTypeFromStringValid(t *testing.T) {
 				staticLength: 2,
 			},
 		},
+		{
+			input:    "(bool,bool,(string,uint64)[3])",
+			testType: "tuple array",
+			expected: Type{
+				kind: Tuple,
+				childTypes: []Type{
+					boolType,
+					boolType,
+					makeStaticArrayType(
+						Type{
+							kind: Tuple,
+							childTypes: []Type{
+								stringType,
+								{
+									kind:    Uint,
+									bitSize: uint16(64),
+								},
+							},
+							staticLength: 2,
+						},
+						uint16(3),
+					),
+				},
+				staticLength: 3,
+			},
+		},
+		{
+			input:    "(bool,(string,uint64)[3],bool)",
+			testType: "tuple array",
+			expected: Type{
+				kind: Tuple,
+				childTypes: []Type{
+					boolType,
+					makeStaticArrayType(
+						Type{
+							kind: Tuple,
+							childTypes: []Type{
+								stringType,
+								{
+									kind:    Uint,
+									bitSize: uint16(64),
+								},
+							},
+							staticLength: 2,
+						},
+						uint16(3),
+					),
+					boolType,
+				},
+				staticLength: 3,
+			},
+		},
+		{
+			input:    "((string,uint64)[3],bool,bool)",
+			testType: "tuple array",
+			expected: Type{
+				kind: Tuple,
+				childTypes: []Type{
+					makeStaticArrayType(
+						Type{
+							kind: Tuple,
+							childTypes: []Type{
+								stringType,
+								{
+									kind:    Uint,
+									bitSize: uint16(64),
+								},
+							},
+							staticLength: 2,
+						},
+						uint16(3),
+					),
+					boolType,
+					boolType,
+				},
+				staticLength: 3,
+			},
+		},
 	}
 	for _, testcase := range testcases {
 		t.Run(fmt.Sprintf("TypeOf test %s", testcase.testType), func(t *testing.T) {
@@ -504,6 +600,17 @@ func TestTypeMISC(t *testing.T) {
 	for _, testcaseTuple := range testpoolTuple {
 		require.True(t, testcaseTuple.Equal(testcaseTuple), "test type tuple equal error")
 	}
+	// add testcase for array of tuples into testpool
+	testpoolTupleArray := make([]Type, 0, 200)
+	for i := 0; i < 100; i++ {
+		testpoolTupleArray = append(testpoolTupleArray, makeDynamicArrayType(testpoolTuple[i]))
+	}
+	for i := 0; i < 100; i++ {
+		testpoolTupleArray = append(testpoolTupleArray, makeStaticArrayType(testpoolTuple[i], 10))
+	}
+	for i := 0; i < 100; i++ {
+		testpoolTuple = append(testpoolTuple, generateTupleType(testpool, testpoolTupleArray))
+	}
 
 	tupleTestCount := 0
 	for tupleTestCount < 100 {
@@ -519,6 +626,14 @@ func TestTypeMISC(t *testing.T) {
 	}
 
 	testpool = append(testpool, testpoolTuple...)
+	testpool = append(testpool, testpoolTupleArray...)
+	for _, testcase := range testpool {
+		deseralized, err := TypeOf(testcase.String())
+		fmt.Println(testcase.String())
+		require.NoError(t, err, "serialize a type object should not raise error")
+		require.Equal(t, testcase, deseralized, "round trip test on parsing type string failed for testcase %v", testcase)
+	}
+
 	isDynamicCount := 0
 	for isDynamicCount < 100 {
 		index := rand.Intn(len(testpool))

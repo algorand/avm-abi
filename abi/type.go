@@ -24,7 +24,7 @@ const (
 	Bool
 	// ArrayStatic is the kind for ABI static array types, i.e. `<type>[<length>]`.
 	ArrayStatic
-	// Address is the the kind for the ABI `address` type.
+	// Address is the kind for the ABI `address` type.
 	Address
 	// ArrayDynamic is the kind for ABI dynamic array types, i.e. `<type>[]`.
 	ArrayDynamic
@@ -186,6 +186,7 @@ type segment struct{ left, right int }
 // parseTupleContent splits an ABI encoded string for tuple type into multiple sub-strings.
 // Each sub-string represents a content type of the tuple type.
 // The argument str is the content between parentheses of tuple, i.e.
+//
 // (...... str ......)
 //
 //	^               ^
@@ -213,11 +214,15 @@ func parseTupleContent(str string) ([]string, error) {
 	var stack []int
 
 	// get the most exterior parentheses segment (not overlapped by other parentheses)
-	// illustration: "*****,(*****),*****" => ["*****", "(*****)", "*****"]
+	// illustrations:
+	// - "*****,(*****),*****" => ["*****", "(*****)", "*****"]
+	// - "*****,(**)[5],*****" => ["*****", "(**)[5]", "*****"]
 	// once iterate to left paren (, stack up by 1 in stack
 	// iterate to right paren ), pop 1 in stack
-	// if iterate to right paren ) with stack height 0, find a parenthesis segment "(******)"
-	for index, chr := range str {
+	// if iterate to right paren ) with stack height 0, iterate until comma or end of string,
+	// find a parenthesis segment "(******)"
+	for index := 0; index < len(str); index++ {
+		chr := str[index]
 		if chr == '(' {
 			stack = append(stack, index)
 		} else if chr == ')' {
@@ -227,6 +232,12 @@ func parseTupleContent(str string) ([]string, error) {
 			leftParenIndex := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			if len(stack) == 0 {
+				// increase index til it meets comma, or end of string
+				forwardIndex := index + 1
+				for forwardIndex < len(str) && str[forwardIndex] != ',' {
+					forwardIndex++
+				}
+				index = forwardIndex - 1
 				parenSegmentRecord = append(parenSegmentRecord, segment{
 					left:  leftParenIndex,
 					right: index,
