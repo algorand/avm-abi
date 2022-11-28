@@ -601,6 +601,17 @@ func TestTypeMISC(t *testing.T) {
 	for _, testcaseTuple := range testpoolTuple {
 		require.True(t, testcaseTuple.Equal(testcaseTuple), "test type tuple equal error")
 	}
+	// add testcase for array of tuples into testpool
+	testpoolTupleArray := make([]Type, 0, 200)
+	for i := 0; i < 100; i++ {
+		testpoolTupleArray = append(testpoolTupleArray, makeDynamicArrayType(testpoolTuple[i]))
+	}
+	for i := 0; i < 100; i++ {
+		testpoolTupleArray = append(testpoolTupleArray, makeStaticArrayType(testpoolTuple[i], 10))
+	}
+	for i := 0; i < 100; i++ {
+		testpoolTuple = append(testpoolTuple, generateTupleType(testpool, testpoolTupleArray))
+	}
 
 	tupleTestCount := 0
 	for tupleTestCount < 100 {
@@ -616,6 +627,14 @@ func TestTypeMISC(t *testing.T) {
 	}
 
 	testpool = append(testpool, testpoolTuple...)
+	testpool = append(testpool, testpoolTupleArray...)
+	for _, testcase := range testpool {
+		deseralized, err := TypeOf(testcase.String())
+		fmt.Println(testcase.String())
+		require.NoError(t, err, "serialize a type object should not raise error")
+		require.Equal(t, testcase, deseralized, "round trip test on parsing type string failed for testcase %v", testcase)
+	}
+
 	isDynamicCount := 0
 	for isDynamicCount < 100 {
 		index := rand.Intn(len(testpool))
