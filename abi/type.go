@@ -186,7 +186,6 @@ type segment struct{ left, right int }
 // parseTupleContent splits an ABI encoded string for tuple type into multiple sub-strings.
 // Each sub-string represents a content type of the tuple type.
 // The argument str is the content between parentheses of tuple, i.e.
-//
 // (...... str ......)
 //
 //	^               ^
