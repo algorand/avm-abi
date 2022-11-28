@@ -96,7 +96,7 @@ func (t Type) String() string {
 	}
 }
 
-var staticArrayRegexp = regexp.MustCompile(`^([a-z\d\[\](),]+)\[([1-9][\d]*)]$`)
+var staticArrayRegexp = regexp.MustCompile(`^([a-z\d\[\](),]+)\[(0|[1-9][\d]*)]$`)
 var ufixedRegexp = regexp.MustCompile(`^ufixed([1-9][\d]*)x([1-9][\d]*)$`)
 
 // TypeOf parses an ABI type string.
@@ -187,7 +187,8 @@ type segment struct{ left, right int }
 // Each sub-string represents a content type of the tuple type.
 // The argument str is the content between parentheses of tuple, i.e.
 // (...... str ......)
-//  ^               ^
+//
+//	^               ^
 func parseTupleContent(str string) ([]string, error) {
 	// if the tuple type content is empty (which is also allowed)
 	// just return the empty string list
