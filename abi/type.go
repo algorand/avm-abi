@@ -195,6 +195,7 @@ type segment struct{ left, right int }
 // The argument str is the content between parentheses of tuple, i.e.
 //
 // (...... str ......)
+//
 //	^               ^
 func parseTupleContent(str string) ([]string, error) {
 	// if the tuple type content is empty (which is also allowed)
@@ -220,10 +221,13 @@ func parseTupleContent(str string) ([]string, error) {
 	var stack []int
 
 	// get the most exterior parentheses segment (not overlapped by other parentheses)
-	// illustration: "*****,(*****),*****" => ["*****", "(*****)", "*****"]
+	// illustrations:
+	// - "*****,(*****),*****" => ["*****", "(*****)", "*****"]
+	// - "*****,(**)[5],*****" => ["*****", "(**)[5]", "*****"]
 	// once iterate to left paren (, stack up by 1 in stack
 	// iterate to right paren ), pop 1 in stack
-	// if iterate to right paren ) with stack height 0, find a parenthesis segment "(******)"
+	// if iterate to right paren ) with stack height 0, iterate until comma or end of string,
+	// find a parenthesis segment "(******)"
 	for index := 0; index < len(str); index++ {
 		chr := str[index]
 		if chr == '(' {
