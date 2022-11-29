@@ -521,6 +521,7 @@ func TestTypeFromStringInvalid(t *testing.T) {
 		"[][][]",
 		"stuff[]",
 		// static array
+		"byte[01]",
 		"byte[10 ]",
 		"uint64[0x21]",
 		// tuple
