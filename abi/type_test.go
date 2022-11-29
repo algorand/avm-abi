@@ -628,10 +628,10 @@ func TestTypeMISC(t *testing.T) {
 	testpool = append(testpool, testpoolTuple...)
 	testpool = append(testpool, testpoolTupleArray...)
 	for _, testcase := range testpool {
-		deseralized, err := TypeOf(testcase.String())
+		deserialized, err := TypeOf(testcase.String())
 		fmt.Println(testcase.String())
 		require.NoError(t, err, "serialize a type object should not raise error")
-		require.Equal(t, testcase, deseralized, "round trip test on parsing type string failed for testcase %v", testcase)
+		require.Equal(t, testcase, deserialized, "round trip test on parsing type string failed for testcase %v", testcase)
 	}
 
 	isDynamicCount := 0

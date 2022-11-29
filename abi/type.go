@@ -186,9 +186,7 @@ type segment struct{ left, right int }
 // parseTupleContent splits an ABI encoded string for tuple type into multiple sub-strings.
 // Each sub-string represents a content type of the tuple type.
 // The argument str is the content between parentheses of tuple, i.e.
-//
 // (...... str ......)
-//
 //	^               ^
 func parseTupleContent(str string) ([]string, error) {
 	// if the tuple type content is empty (which is also allowed)
@@ -200,9 +198,9 @@ func parseTupleContent(str string) ([]string, error) {
 	// the following 2 checks want to make sure input string can be separated by comma
 	// with form: "...substr_0,...substr_1,...,...substr_k"
 
-	// str should noe have leading/tailing comma
+	// str should not have leading/tailing comma
 	if strings.HasSuffix(str, ",") || strings.HasPrefix(str, ",") {
-		return []string{}, fmt.Errorf("parsing error: tuple content should not start with comma")
+		return []string{}, fmt.Errorf("parsing error: tuple content should not start or end with comma")
 	}
 
 	// str should not have consecutive commas contained
