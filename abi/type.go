@@ -96,7 +96,7 @@ func (t Type) String() string {
 	}
 }
 
-var staticArrayRegexp = regexp.MustCompile(`^([a-z\d\[\](),]+)\[([1-9][\d]*)]$`)
+var staticArrayRegexp = regexp.MustCompile(`^([a-z\d\[\](),]+)\[(0|[1-9][\d]*)]$`)
 var ufixedRegexp = regexp.MustCompile(`^ufixed([1-9][\d]*)x([1-9][\d]*)$`)
 
 // TypeOf parses an ABI type string.
