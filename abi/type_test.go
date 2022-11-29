@@ -253,6 +253,18 @@ func TestTypeFromStringValid(t *testing.T) {
 				uint16(200),
 			),
 		},
+		{
+			input:    "ufixed64x10[0]",
+			testType: "static array",
+			expected: makeStaticArrayType(
+				Type{
+					kind:      Ufixed,
+					bitSize:   uint16(64),
+					precision: uint16(10),
+				},
+				uint16(0),
+			),
+		},
 		// tuple type
 		{
 			input:    "()",
