@@ -187,7 +187,6 @@ type segment struct{ left, right int }
 // Each sub-string represents a content type of the tuple type.
 // The argument str is the content between parentheses of tuple, i.e.
 // (...... str ......)
-//
 //	^               ^
 func parseTupleContent(str string) ([]string, error) {
 	// if the tuple type content is empty (which is also allowed)
