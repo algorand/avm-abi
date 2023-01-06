@@ -37,10 +37,10 @@ func TestAddress(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.addressString, func(t *testing.T) {
-				require.Equal(t, testCase.addressChecksum[:], addressCheckSum(testCase.addressBytes))
-				require.Equal(t, testCase.addressString, addressToString(testCase.addressBytes))
+				require.Equal(t, testCase.addressChecksum[:], AddressCheckSum(testCase.addressBytes))
+				require.Equal(t, testCase.addressString, AddressToString(testCase.addressBytes))
 
-				actualBytes, err := addressFromString(testCase.addressString)
+				actualBytes, err := AddressFromString(testCase.addressString)
 				require.NoError(t, err)
 				require.Equal(t, testCase.addressBytes, actualBytes)
 			})
@@ -77,7 +77,7 @@ func TestAddress(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.addressString, func(t *testing.T) {
-				_, err := addressFromString(testCase.addressString)
+				_, err := AddressFromString(testCase.addressString)
 				require.ErrorContains(t, err, testCase.expectedError)
 			})
 		}

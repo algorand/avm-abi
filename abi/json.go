@@ -11,13 +11,15 @@ import (
 
 var base32Encoder = base32.StdEncoding.WithPadding(base32.NoPadding)
 
-func addressCheckSum(addressBytes [addressByteSize]byte) []byte {
+// AddressCheckSum computes the address check sum
+func AddressCheckSum(addressBytes [addressByteSize]byte) []byte {
 	hashed := sha512.Sum512_256(addressBytes[:])
 	return hashed[addressByteSize-checksumByteSize:]
 }
 
-func addressToString(addressBytes [addressByteSize]byte) string {
-	checksum := addressCheckSum(addressBytes)
+// AddressToString converts address to a string
+func AddressToString(addressBytes [addressByteSize]byte) string {
+	checksum := AddressCheckSum(addressBytes)
 
 	var addressBytesAndChecksum [addressByteSize + checksumByteSize]byte
 	copy(addressBytesAndChecksum[:], addressBytes[:])
@@ -26,7 +28,8 @@ func addressToString(addressBytes [addressByteSize]byte) string {
 	return base32Encoder.EncodeToString(addressBytesAndChecksum[:])
 }
 
-func addressFromString(addressString string) ([addressByteSize]byte, error) {
+// AddressFromString converts a string to an address
+func AddressFromString(addressString string) ([addressByteSize]byte, error) {
 	decoded, err := base32Encoder.DecodeString(addressString)
 	if err != nil {
 		return [addressByteSize]byte{},
@@ -43,7 +46,7 @@ func addressFromString(addressString string) ([addressByteSize]byte, error) {
 	var addressBytes [addressByteSize]byte
 	copy(addressBytes[:], decoded[:])
 
-	checksum := addressCheckSum(addressBytes)
+	checksum := AddressCheckSum(addressBytes)
 	if !bytes.Equal(checksum, decoded[addressByteSize:]) {
 		return [addressByteSize]byte{}, fmt.Errorf(
 			"cannot cast encoded address string (%s) to address: decoded checksum mismatch, %v != %v",
@@ -116,7 +119,7 @@ func (t Type) MarshalToJSON(value interface{}) ([]byte, error) {
 		default:
 			return nil, fmt.Errorf("cannot infer to byte slice/array for marshal to JSON")
 		}
-		return json.Marshal(addressToString(addressBytes))
+		return json.Marshal(AddressToString(addressBytes))
 	case ArrayStatic, ArrayDynamic:
 		values, err := inferToSlice(value)
 		if err != nil {
@@ -210,7 +213,7 @@ func (t Type) UnmarshalFromJSON(jsonEncoded []byte) (interface{}, error) {
 			return nil, fmt.Errorf("cannot cast JSON encoded (%s) to address string: %w", string(jsonEncoded), err)
 		}
 
-		addrBytes, err := addressFromString(addrStr)
+		addrBytes, err := AddressFromString(addrStr)
 		if err != nil {
 			return nil, err
 		}
