@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/algorand/avm-abi/abi"
+	"github.com/algorand/avm-abi/address"
 )
 
 func TestNewAppCallBytes(t *testing.T) {
@@ -90,7 +91,7 @@ func TestNewAppCallBytes(t *testing.T) {
 				require.NoError(t, err)
 				r, err := acb.Raw()
 				require.NoError(t, err)
-				addr, err := abi.AddressFromString(v)
+				addr, err := address.FromString(v)
 				require.NoError(t, err)
 				expectedBytes := addr[:]
 				require.Equal(t, expectedBytes, r)

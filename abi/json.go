@@ -2,60 +2,12 @@ package abi
 
 import (
 	"bytes"
-	"crypto/sha512"
-	"encoding/base32"
 	"encoding/json"
 	"fmt"
 	"math/big"
+
+	"github.com/algorand/avm-abi/address"
 )
-
-var base32Encoder = base32.StdEncoding.WithPadding(base32.NoPadding)
-
-// AddressCheckSum computes the address check sum
-func AddressCheckSum(addressBytes [addressByteSize]byte) []byte {
-	hashed := sha512.Sum512_256(addressBytes[:])
-	return hashed[addressByteSize-checksumByteSize:]
-}
-
-// AddressToString converts address to a string
-func AddressToString(addressBytes [addressByteSize]byte) string {
-	checksum := AddressCheckSum(addressBytes)
-
-	var addressBytesAndChecksum [addressByteSize + checksumByteSize]byte
-	copy(addressBytesAndChecksum[:], addressBytes[:])
-	copy(addressBytesAndChecksum[addressByteSize:], checksum)
-
-	return base32Encoder.EncodeToString(addressBytesAndChecksum[:])
-}
-
-// AddressFromString converts a string to an address
-func AddressFromString(addressString string) ([addressByteSize]byte, error) {
-	decoded, err := base32Encoder.DecodeString(addressString)
-	if err != nil {
-		return [addressByteSize]byte{},
-			fmt.Errorf("cannot cast encoded address string (%s) to address: base32 decode error: %w", addressString, err)
-	}
-	if len(decoded) != addressByteSize+checksumByteSize {
-		return [addressByteSize]byte{},
-			fmt.Errorf(
-				"cannot cast encoded address string (%s) to address: "+
-					"decoded byte length should equal %d with address and checksum",
-				addressString, addressByteSize+checksumByteSize,
-			)
-	}
-	var addressBytes [addressByteSize]byte
-	copy(addressBytes[:], decoded[:])
-
-	checksum := AddressCheckSum(addressBytes)
-	if !bytes.Equal(checksum, decoded[addressByteSize:]) {
-		return [addressByteSize]byte{}, fmt.Errorf(
-			"cannot cast encoded address string (%s) to address: decoded checksum mismatch, %v != %v",
-			addressString, checksum, decoded[addressByteSize:],
-		)
-	}
-
-	return addressBytes, nil
-}
 
 func castBigIntToNearestPrimitive(num *big.Int, bitSize uint16) (interface{}, error) {
 	if num.BitLen() > int(bitSize) {
@@ -107,19 +59,19 @@ func (t Type) MarshalToJSON(value interface{}) ([]byte, error) {
 		}
 		return json.Marshal(byteValue)
 	case Address:
-		var addressBytes [addressByteSize]byte
+		var addressBytes [address.BytesSize]byte
 		switch valueCasted := value.(type) {
 		case []byte:
-			if len(valueCasted) != addressByteSize {
+			if len(valueCasted) != address.BytesSize {
 				return nil, fmt.Errorf("address byte slice length not equal to 32 byte")
 			}
 			copy(addressBytes[:], valueCasted[:])
-		case [addressByteSize]byte:
+		case [address.BytesSize]byte:
 			copy(addressBytes[:], valueCasted[:])
 		default:
 			return nil, fmt.Errorf("cannot infer to byte slice/array for marshal to JSON")
 		}
-		return json.Marshal(AddressToString(addressBytes))
+		return json.Marshal(address.ToString(addressBytes))
 	case ArrayStatic, ArrayDynamic:
 		values, err := inferToSlice(value)
 		if err != nil {
@@ -213,7 +165,7 @@ func (t Type) UnmarshalFromJSON(jsonEncoded []byte) (interface{}, error) {
 			return nil, fmt.Errorf("cannot cast JSON encoded (%s) to address string: %w", string(jsonEncoded), err)
 		}
 
-		addrBytes, err := AddressFromString(addrStr)
+		addrBytes, err := address.FromString(addrStr)
 		if err != nil {
 			return nil, err
 		}
