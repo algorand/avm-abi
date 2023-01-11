@@ -20,7 +20,7 @@ func Checksum(addressBytes [BytesSize]byte) []byte {
 	return hashed[BytesSize-checksumBytesSize:]
 }
 
-// AddressToString converts address to a string
+// ToString converts a 32 byte Algorand address to a string
 func ToString(addressBytes [BytesSize]byte) string {
 	checksum := Checksum(addressBytes)
 
@@ -31,7 +31,7 @@ func ToString(addressBytes [BytesSize]byte) string {
 	return base32Encoder.EncodeToString(addressBytesAndChecksum[:])
 }
 
-// AddressFromString converts a string to an address
+// FromString converts a string to a 32 byte Algorand address
 func FromString(addressString string) ([BytesSize]byte, error) {
 	decoded, err := base32Encoder.DecodeString(addressString)
 	if err != nil {
