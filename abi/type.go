@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/algorand/avm-abi/address"
 )
 
 // TypeKind is an enum value which indicates the kind of an ABI type.
@@ -35,8 +37,6 @@ const (
 )
 
 const (
-	addressByteSize        = 32
-	checksumByteSize       = 4
 	singleByteSize         = 1
 	singleBoolSize         = 1
 	lengthEncodeByteSize   = 2
@@ -408,7 +408,7 @@ func findBoolLR(typeList []Type, index int, delta int) int {
 func (t Type) ByteLen() (int, error) {
 	switch t.kind {
 	case Address:
-		return addressByteSize, nil
+		return address.BytesSize, nil
 	case Byte:
 		return singleByteSize, nil
 	case Uint, Ufixed:

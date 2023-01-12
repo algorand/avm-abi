@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"reflect"
 	"strings"
+
+	"github.com/algorand/avm-abi/address"
 )
 
 // typeCastToTuple cast an array-like ABI type into an ABI tuple type.
@@ -22,8 +24,8 @@ func (t Type) typeCastToTuple(tupLen ...int) (Type, error) {
 			childT[i] = byteType
 		}
 	case Address:
-		childT = make([]Type, addressByteSize)
-		for i := 0; i < addressByteSize; i++ {
+		childT = make([]Type, address.BytesSize)
+		for i := 0; i < address.BytesSize; i++ {
 			childT[i] = byteType
 		}
 	case ArrayStatic:
@@ -373,7 +375,7 @@ func (t Type) Decode(encoded []byte) (interface{}, error) {
 		}
 		return castedType.Decode(encoded)
 	case Address:
-		if len(encoded) != addressByteSize {
+		if len(encoded) != address.BytesSize {
 			return nil, fmt.Errorf("address should be length 32")
 		}
 		return encoded, nil
