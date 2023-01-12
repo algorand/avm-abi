@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/algorand/avm-abi/address"
 	"github.com/chrismcguire/gobberish"
 	"github.com/stretchr/testify/require"
 )
@@ -117,12 +118,12 @@ func TestEncodeValid(t *testing.T) {
 
 	// encoding test for address, since address is 32 byte, it can be considered as 256 bit uint
 	// randomly generate 1000 uint256 and make address values, check if encoded value match with expected
-	upperLimit := new(big.Int).Lsh(big.NewInt(1), addressByteSize<<3)
+	upperLimit := new(big.Int).Lsh(big.NewInt(1), address.BytesSize<<3)
 	for i := 0; i < uintRandomTestPoints; i++ {
 		randomAddrInt, err := rand.Int(rand.Reader, upperLimit)
 		require.NoError(t, err, "cryptographic random int init fail")
 
-		addrBytesExpected := make([]byte, addressByteSize)
+		addrBytesExpected := make([]byte, address.BytesSize)
 		randomAddrInt.FillBytes(addrBytesExpected)
 
 		addrBytesActual, err := addressType.Encode(addrBytesExpected)
@@ -397,12 +398,12 @@ func TestDecodeValid(t *testing.T) {
 	// decoding test for address, randomly take 300 tests
 	// address is type alias of byte[32], we generate address value with random 256 bit big int values
 	// we make the expected address value and decode the encoding of expected, check if they match
-	upperLimit := new(big.Int).Lsh(big.NewInt(1), addressByteSize<<3)
+	upperLimit := new(big.Int).Lsh(big.NewInt(1), address.BytesSize<<3)
 	for i := 0; i < addressTestCaseCount; i++ {
 		randomAddrInt, err := rand.Int(rand.Reader, upperLimit)
 		require.NoError(t, err, "cryptographic random int init fail")
 
-		expected := make([]byte, addressByteSize)
+		expected := make([]byte, address.BytesSize)
 		randomAddrInt.FillBytes(expected)
 
 		actual, err := addressType.Decode(expected)
@@ -938,12 +939,12 @@ func addPrimitiveRandomValues(t *testing.T, pool *map[TypeKind][]testUnit) {
 	(*pool)[Bool][1] = testUnit{serializedType: boolType.String(), value: true}
 	categorySelfRoundTripTest(t, (*pool)[Bool])
 
-	maxAddress := new(big.Int).Lsh(big.NewInt(1), addressByteSize<<3)
+	maxAddress := new(big.Int).Lsh(big.NewInt(1), address.BytesSize<<3)
 	(*pool)[Address] = make([]testUnit, addressTestCaseCount)
 	for i := 0; i < addressTestCaseCount; i++ {
 		randAddrVal, err := rand.Int(rand.Reader, maxAddress)
 		require.NoError(t, err, "generate random value for address, should be no error")
-		addrBytes := make([]byte, addressByteSize)
+		addrBytes := make([]byte, address.BytesSize)
 		randAddrVal.FillBytes(addrBytes)
 		(*pool)[Address][i] = testUnit{serializedType: addressType.String(), value: addrBytes}
 	}
