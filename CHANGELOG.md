@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Unreleased
 
+## v0.2.0
+### Added
+- Add `address` and `apps` packages with additional functionality ([#16](https://github.com/algorand/avm-abi/pull/16))
+
 ## v0.1.1
 ### Added
 - Expanded documentation for `Encode` and `Decode` functions ([#11](https://github.com/algorand/avm-abi/pull/11))
