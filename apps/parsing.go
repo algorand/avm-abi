@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/algorand/avm-abi/abi"
+	"github.com/algorand/avm-abi/address"
 )
 
 // AppCallBytes represents an encoding and a value of an app call argument.
@@ -44,7 +45,7 @@ func (arg AppCallBytes) Raw() (rawValue []byte, parseErr error) {
 		binary.BigEndian.PutUint64(ibytes, num)
 		rawValue = ibytes
 	case "addr", "address":
-		addr, err := abi.AddressFromString(arg.Value)
+		addr, err := address.FromString(arg.Value)
 		if err != nil {
 			parseErr = fmt.Errorf("Could not unmarshal checksummed address from string (%s): %v", arg.Value, err)
 			return
@@ -77,7 +78,7 @@ func (arg AppCallBytes) Raw() (rawValue []byte, parseErr error) {
 		}
 		value, err := abiType.UnmarshalFromJSON([]byte(typeAndValue[1]))
 		if err != nil {
-			parseErr = fmt.Errorf("Could not decode abi value string (%s):%v ", typeAndValue[1], err)
+			parseErr = fmt.Errorf("Could not decode abi value string (%s): %v ", typeAndValue[1], err)
 			return
 		}
 		return abiType.Encode(value)
