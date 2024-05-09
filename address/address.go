@@ -1,3 +1,7 @@
+/*
+Package address provides the ability to convert between 32 byte Algorand addresses and their base32
+string form.
+*/
 package address
 
 import (

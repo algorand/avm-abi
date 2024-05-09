@@ -1,3 +1,6 @@
+/*
+Package apps provides parsing utilities related to application arguments and box keys.
+*/
 package apps
 
 import (
