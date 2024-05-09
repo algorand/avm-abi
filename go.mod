@@ -1,6 +1,8 @@
 module github.com/algorand/avm-abi
 
-go 1.20
+go 1.21
+
+toolchain go1.21.10
 
 require (
 	github.com/chrismcguire/gobberish v0.0.0-20150821175641-1d8adb509a0e
