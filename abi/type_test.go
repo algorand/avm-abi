@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -564,7 +563,6 @@ func generateTupleType(baseTypes []Type, tupleTypes []Type) Type {
 
 func TestTypeMISC(t *testing.T) {
 	t.Parallel()
-	rand.Seed(time.Now().Unix())
 
 	var testpool = []Type{
 		boolType,
