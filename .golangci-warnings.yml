@@ -6,10 +6,7 @@ linters:
   disable-all: true
   enable:
     - staticcheck
-    - structcheck
     - typecheck
-    - varcheck
-    - deadcode
     - gosimple
     - unused
 
