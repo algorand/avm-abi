@@ -894,14 +894,14 @@ func addPrimitiveRandomValues(t *testing.T, pool *map[TypeKind][]testUnit) {
 	ufixedIndex := 0
 
 	for bitSize := uintBegin; bitSize <= uintEnd; bitSize += uintStepLength {
-		max := new(big.Int).Lsh(big.NewInt(1), uint(bitSize))
+		lshBase := new(big.Int).Lsh(big.NewInt(1), uint(bitSize))
 
 		uintT, err := makeUintType(bitSize)
 		require.NoError(t, err, "make uint type failure")
 		uintTstr := uintT.String()
 
 		for j := 0; j < uintTestCaseCount; j++ {
-			randVal, err := rand.Int(rand.Reader, max)
+			randVal, err := rand.Int(rand.Reader, lshBase)
 			require.NoError(t, err, "generate random uint, should be no error")
 
 			narrowest, err := castBigIntToNearestPrimitive(randVal, uint16(bitSize))
@@ -912,7 +912,7 @@ func addPrimitiveRandomValues(t *testing.T, pool *map[TypeKind][]testUnit) {
 		}
 
 		for precision := 1; precision <= ufixedPrecision; precision++ {
-			randVal, err := rand.Int(rand.Reader, max)
+			randVal, err := rand.Int(rand.Reader, lshBase)
 			require.NoError(t, err, "generate random ufixed, should be no error")
 
 			narrowest, err := castBigIntToNearestPrimitive(randVal, uint16(bitSize))
