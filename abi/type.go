@@ -37,6 +37,11 @@ const (
 )
 
 const (
+	// maxTypeNesting is the maximum nesting depth (of arrays and tuples) accepted by TypeOf.
+	// Parsing cost grows quadratically with nesting depth, so unbounded nesting lets a short string
+	// consume seconds of CPU.
+	maxTypeNesting = 256
+
 	singleByteSize         = 1
 	singleBoolSize         = 1
 	lengthEncodeByteSize   = 2
@@ -102,12 +107,22 @@ var ufixedRegexp = regexp.MustCompile(`^ufixed([1-9][\d]*)x([1-9][\d]*)$`)
 // TypeOf parses an ABI type string.
 // For example: `TypeOf("(uint64,byte[])")`
 //
+// Types nested more than 256 levels deep (arrays and tuples) are rejected with an error.
+//
 // Note: this function only supports "basic" ABI types. Reference types and transaction types are
 // not supported and will produce an error.
 func TypeOf(str string) (Type, error) {
+	return typeOf(str, 0)
+}
+
+// typeOf implements TypeOf. depth is the number of enclosing array and tuple types.
+func typeOf(str string, depth int) (Type, error) {
+	if depth > maxTypeNesting {
+		return Type{}, fmt.Errorf("type nesting exceeds the maximum depth of %d", maxTypeNesting)
+	}
 	switch {
 	case strings.HasSuffix(str, "[]"):
-		arrayArgType, err := TypeOf(str[:len(str)-2])
+		arrayArgType, err := typeOf(str[:len(str)-2], depth+1)
 		if err != nil {
 			return Type{}, err
 		}
@@ -126,7 +141,7 @@ func TypeOf(str string) (Type, error) {
 			return Type{}, err
 		}
 		// parse the array element type
-		arrayType, err := TypeOf(stringMatches[1])
+		arrayType, err := typeOf(stringMatches[1], depth+1)
 		if err != nil {
 			return Type{}, err
 		}
@@ -168,7 +183,7 @@ func TypeOf(str string) (Type, error) {
 		}
 		tupleTypes := make([]Type, len(tupleContent))
 		for i := 0; i < len(tupleContent); i++ {
-			ti, err := TypeOf(tupleContent[i])
+			ti, err := typeOf(tupleContent[i], depth+1)
 			if err != nil {
 				return Type{}, err
 			}
@@ -406,6 +421,8 @@ func findBoolLR(typeList []Type, index int, delta int) int {
 }
 
 // ByteLen method calculates the byte length of a static ABI type.
+//
+// An error is returned if the type is dynamic, or if its byte length does not fit in an int.
 func (t Type) ByteLen() (int, error) {
 	switch t.kind {
 	case Address:
@@ -418,17 +435,22 @@ func (t Type) ByteLen() (int, error) {
 		return singleBoolSize, nil
 	case ArrayStatic:
 		if t.childTypes[0].kind == Bool {
-			byteLen := int(t.staticLength+7) / 8
+			byteLen := (int(t.staticLength) + 7) / 8
 			return byteLen, nil
 		}
 		elemByteLen, err := t.childTypes[0].ByteLen()
 		if err != nil {
 			return -1, err
 		}
-		return int(t.staticLength) * elemByteLen, nil
+		byteLen, ok := mulInt(int(t.staticLength), elemByteLen)
+		if !ok {
+			return -1, fmt.Errorf("%s: byte length overflows int", t.String())
+		}
+		return byteLen, nil
 	case Tuple:
 		size := 0
 		for i := 0; i < len(t.childTypes); i++ {
+			var childByteSize int
 			if t.childTypes[i].kind == Bool {
 				// search after bool
 				after := findBoolLR(t.childTypes, i, 1)
@@ -436,19 +458,40 @@ func (t Type) ByteLen() (int, error) {
 				i += after
 				// get number of bool
 				boolNum := after + 1
-				size += (boolNum + 7) / 8
+				childByteSize = (boolNum + 7) / 8
 			} else {
-				childByteSize, err := t.childTypes[i].ByteLen()
+				var err error
+				childByteSize, err = t.childTypes[i].ByteLen()
 				if err != nil {
 					return -1, err
 				}
-				size += childByteSize
+			}
+			var ok bool
+			size, ok = addInt(size, childByteSize)
+			if !ok {
+				return -1, fmt.Errorf("%s: byte length overflows int", t.String())
 			}
 		}
 		return size, nil
 	default:
 		return -1, fmt.Errorf("%s is a dynamic type", t.String())
 	}
+}
+
+// mulInt returns a*b for non-negative a and b, and false if the product does not fit in an int.
+func mulInt(a, b int) (int, bool) {
+	if a != 0 && b > math.MaxInt/a {
+		return 0, false
+	}
+	return a * b, true
+}
+
+// addInt returns a+b for non-negative a and b, and false if the sum does not fit in an int.
+func addInt(a, b int) (int, bool) {
+	if b > math.MaxInt-a {
+		return 0, false
+	}
+	return a + b, true
 }
 
 // AnyTransactionType is the ABI argument type string for a nonspecific transaction argument

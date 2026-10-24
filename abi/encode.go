@@ -52,6 +52,43 @@ func (t Type) typeCastToTuple(tupLen ...int) (Type, error) {
 	return tuple, nil
 }
 
+// minArrayEncodedLen returns a lower bound on the number of bytes needed to encode n elements of
+// type elem, laid out as a tuple of n elem types (the encoding of both static and dynamic arrays,
+// excluding the length prefix of dynamic arrays).
+func minArrayEncodedLen(elem Type, n int) (int, error) {
+	switch {
+	case elem.kind == Bool:
+		return (n + 7) / 8, nil
+	case elem.IsDynamic():
+		// every dynamic element has at least a 2 byte offset in the head
+		return n * lengthEncodeByteSize, nil
+	default:
+		elemLen, err := elem.ByteLen()
+		if err != nil {
+			return 0, err
+		}
+		minLen, ok := mulInt(n, elemLen)
+		if !ok {
+			return 0, fmt.Errorf("%s[%d]: byte length overflows int", elem.String(), n)
+		}
+		return minLen, nil
+	}
+}
+
+// checkArrayInputLen is called before an array of n elements of type elem is expanded into a tuple
+// type to decode encoded. It returns an error if encoded is too short to hold n elements, which
+// keeps the memory spent decoding proportional to the size of the input.
+func checkArrayInputLen(elem Type, n int, encoded []byte) error {
+	minLen, err := minArrayEncodedLen(elem, n)
+	if err != nil {
+		return err
+	}
+	if len(encoded) < minLen {
+		return fmt.Errorf("input byte not enough to decode %d elements of type %s", n, elem.String())
+	}
+	return nil
+}
+
 // Encode is an ABI type method to encode Go values into bytes.
 //
 // Depending on the ABI type instance, different values are acceptable for this
@@ -369,6 +406,9 @@ func (t Type) Decode(encoded []byte) (interface{}, error) {
 		}
 		return encoded[0], nil
 	case ArrayStatic:
+		if err := checkArrayInputLen(t.childTypes[0], int(t.staticLength), encoded); err != nil {
+			return nil, err
+		}
 		castedType, err := t.typeCastToTuple()
 		if err != nil {
 			return nil, err
@@ -384,6 +424,9 @@ func (t Type) Decode(encoded []byte) (interface{}, error) {
 			return nil, fmt.Errorf("dynamic array format corrupted")
 		}
 		dynamicLen := binary.BigEndian.Uint16(encoded[:lengthEncodeByteSize])
+		if err := checkArrayInputLen(t.childTypes[0], int(dynamicLen), encoded[lengthEncodeByteSize:]); err != nil {
+			return nil, err
+		}
 		castedType, err := t.typeCastToTuple(int(dynamicLen))
 		if err != nil {
 			return nil, err
@@ -432,6 +475,9 @@ func decodeTuple(encoded []byte, childT []Type) ([]interface{}, error) {
 					after = 7
 				}
 				// parse bool in a byte to multiple byte strings
+				if iterIndex >= len(encoded) {
+					return nil, fmt.Errorf("input byte not enough to decode")
+				}
 				for boolIndex := uint(0); boolIndex <= uint(after); boolIndex++ {
 					boolMask := 0x80 >> boolIndex
 					if encoded[iterIndex]&byte(boolMask) > 0 {
@@ -450,6 +496,9 @@ func decodeTuple(encoded []byte, childT []Type) ([]interface{}, error) {
 			currLen, err := childT[i].ByteLen()
 			if err != nil {
 				return nil, err
+			}
+			if currLen > len(encoded)-iterIndex {
+				return nil, fmt.Errorf("input byte not enough to decode")
 			}
 			valuePartition = append(valuePartition, encoded[iterIndex:iterIndex+currLen])
 			iterIndex += currLen
